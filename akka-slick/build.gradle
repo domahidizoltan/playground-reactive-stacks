@@ -1,7 +1,25 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.1'
+    }
+}
+
+
 version '0.1'
 group 'reactivestack'
 
 apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+shadowJar {
+    append('reference.conf')
+}
+
+mainClassName = 'reactivestack.AkkaApplication'
 
 ext {
     akkaGroup = 'com.typesafe.akka'
@@ -17,6 +35,7 @@ repositories {
 dependencies {
     compile(
             "$akkaGroup:akka-http-core_$scalaVersion:$akkaHttpVersion",
+            "$akkaGroup:akka-http-jackson_$scalaVersion:$akkaHttpVersion",
             "$akkaGroup:akka-stream_$scalaVersion:2.5.12",
     )
 }
