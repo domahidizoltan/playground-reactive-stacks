@@ -1,0 +1,22 @@
+version '0.1'
+group 'reactivestack'
+
+apply plugin: 'java'
+
+ext {
+    akkaGroup = 'com.typesafe.akka'
+    scalaVersion = '2.11'
+    akkaHttpVersion = '10.1.5'
+}
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    compile(
+            "$akkaGroup:akka-http-core_$scalaVersion:$akkaHttpVersion",
+            "$akkaGroup:akka-stream_$scalaVersion:2.5.12",
+    )
+}
