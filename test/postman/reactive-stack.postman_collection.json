@@ -1,0 +1,122 @@
+{
+	"variables": [],
+	"info": {
+		"name": "reactive-stack",
+		"_postman_id": "609662f9-5daa-d5b7-0b81-74260393fd8e",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "list",
+			"request": {
+				"url": "{{baseUrl}}/emojis",
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "create",
+			"request": {
+				"url": "{{baseUrl}}/emojis",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"code\": \"U+1F642\",\n    \"category\": \"SMILEYS_AND_EMOTION\",\n    \"name\": \"slightly smiling face\",\n    \"usageCount\": 0\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "list-recent",
+			"request": {
+				"url": {
+					"raw": "{{baseUrl}}/emojis/recent?seconds=4",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"emojis",
+						"recent"
+					],
+					"query": [
+						{
+							"key": "seconds",
+							"value": "4",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get-by-code",
+			"request": {
+				"url": "{{baseUrl}}/emojis/utfCode",
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "delete-by-code",
+			"request": {
+				"url": "{{baseUrl}}/emojis/utfCode",
+				"method": "DELETE",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "used-at-date",
+			"request": {
+				"url": {
+					"raw": "{{baseUrl}}/emojis/U+1F642?usedAt=2018-10-23T15:49:47Z",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"emojis",
+						"U+1F642"
+					],
+					"query": [
+						{
+							"key": "usedAt",
+							"value": "2018-10-23T15:49:47Z",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
