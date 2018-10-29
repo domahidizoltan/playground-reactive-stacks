@@ -9,7 +9,7 @@ import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.server.AllDirectives;
 import akka.stream.ActorMaterializer;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
+import reactivestack.controller.Routes;
 
 import java.util.concurrent.CompletionStage;
 
@@ -22,10 +22,10 @@ public class Server extends AllDirectives {
     private final LoggingAdapter log;
     private CompletionStage<ServerBinding> binding;
 
-    public Server(final String configName, final Routes routes) {
-        this.config = ConfigFactory.load().getConfig(configName);
-        this.system = ActorSystem.create(configName, config);
-        this.materializer = ActorMaterializer.create(system);
+    public Server(final AppSystem appSystem, final Routes routes) {
+        this.config = appSystem.getConfig();
+        this.system = appSystem.getSystem();
+        this.materializer = appSystem.getMaterializer();
         this.routes = routes;
 
         this.log = Logging.getLogger(system, this);

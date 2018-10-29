@@ -25,6 +25,7 @@ ext {
     akkaGroup = 'com.typesafe.akka'
     scalaVersion = '2.11'
     akkaHttpVersion = '10.1.5'
+    akkaVersion = '2.5.17'
 }
 
 repositories {
@@ -33,9 +34,10 @@ repositories {
 
 
 dependencies {
-    compile(
+    implementation(
             "$akkaGroup:akka-http-core_$scalaVersion:$akkaHttpVersion",
             "$akkaGroup:akka-http-jackson_$scalaVersion:$akkaHttpVersion",
-            "$akkaGroup:akka-stream_$scalaVersion:2.5.12",
+            "$akkaGroup:akka-stream_$scalaVersion:$akkaVersion",
+            "org.projectlombok:lombok:1.18.2",
     )
 }
