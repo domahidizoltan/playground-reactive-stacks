@@ -8,21 +8,28 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.server.AllDirectives;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.slick.javadsl.SlickSession;
+import akka.util.Timeout;
 import com.typesafe.config.Config;
-import reactivestack.controller.Routes;
+import reactivestack.controller.EmojiRoutes;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class Server extends AllDirectives {
+
+    public static final SlickSession DB_SESSION = SlickSession.forConfig("slick-postgres");
+    public static final Timeout TIMEOUT = Timeout.durationToTimeout(FiniteDuration.apply(5, TimeUnit.SECONDS));
 
     private final Config config;
     private final ActorSystem system;
     private final ActorMaterializer materializer;
-    private final Routes routes;
+    private final EmojiRoutes routes;
     private final LoggingAdapter log;
     private CompletionStage<ServerBinding> binding;
 
-    public Server(final AppSystem appSystem, final Routes routes) {
+    public Server(final AppSystem appSystem, final EmojiRoutes routes) {
         this.config = appSystem.getConfig();
         this.system = appSystem.getSystem();
         this.materializer = appSystem.getMaterializer();
@@ -36,6 +43,7 @@ public class Server extends AllDirectives {
         if (binding == null) {
             bindRoutes();
         }
+        system.registerOnTermination(DB_SESSION::close);
     }
 
     public void terminate() {

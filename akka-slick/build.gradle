@@ -3,7 +3,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.1'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.4'
     }
 }
 
@@ -38,6 +38,9 @@ dependencies {
             "$akkaGroup:akka-http-core_$scalaVersion:$akkaHttpVersion",
             "$akkaGroup:akka-http-jackson_$scalaVersion:$akkaHttpVersion",
             "$akkaGroup:akka-stream_$scalaVersion:$akkaVersion",
+            "com.lightbend.akka:akka-stream-alpakka-slick_$scalaVersion:1.0-M1",
             "org.projectlombok:lombok:1.18.2",
     )
+
+    runtimeOnly('org.postgresql:postgresql:42.2.5')
 }

@@ -1,0 +1,22 @@
+version: '3.6'
+
+services:
+
+  db:
+    image: postgres:11-alpine
+    restart: on-failure
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: reactive_stack
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: pass
+    volumes:
+      - ${PWD}/data:/var/lib/postgresql/data
+      - ${PWD}/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  adminer:
+    image: adminer
+    restart: on-failure
+    ports:
+      - 9000:8080

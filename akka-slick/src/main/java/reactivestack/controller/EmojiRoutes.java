@@ -1,46 +1,43 @@
 package reactivestack.controller;
 
+import akka.Done;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.http.javadsl.marshallers.jackson.Jackson;
-import akka.http.javadsl.marshalling.Marshaller;
-import akka.http.javadsl.model.HttpEntity;
-import akka.http.javadsl.model.RequestEntity;
-import akka.http.javadsl.model.StatusCode;
+import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.PathMatchers;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.server.directives.RouteAdapter;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
-import akka.util.Timeout;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import reactivestack.actor.EmojiActor;
 import reactivestack.model.ActorCommand.*;
 import reactivestack.model.Emoji;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.time.Instant;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 import static akka.http.javadsl.model.StatusCodes.*;
 import static akka.http.javadsl.server.Directives.*;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.pattern.PatternsCS.ask;
+import static reactivestack.bootstrap.Server.TIMEOUT;
 
-public class Routes {
+public class EmojiRoutes {
 
-    private static final Timeout timeout = Timeout.durationToTimeout(FiniteDuration.apply(5, TimeUnit.SECONDS));
-    private final Marshaller<Object, RequestEntity> mapper = Jackson.marshaller();
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final Unmarshaller<HttpEntity, Emoji> emojiUnmarshaller = Jackson.unmarshaller(Emoji.class);
     private final ActorRef actor;
     private final LoggingAdapter log;
 
 
-    public Routes(final ActorSystem system) {
-        actor = system.actorOf(EmojiActor.props(), "emoji");
+    public EmojiRoutes(final ActorSystem system) {
+        actor = system.actorOf(EmojiActor.props(), EmojiActor.class.getSimpleName());
         log = Logging.getLogger(system, this);
     }
 
@@ -53,6 +50,7 @@ public class Routes {
                     get(() -> getByCodeWithOk(code)),
                     delete(() -> deleteWithNoContent(code)),
 
+                    post(() -> saveAtDateWithCreated(code, Instant.now().toString())),
                     parameter(StringUnmarshallers.STRING, "usedAt", usedAt ->
                         post(() -> saveAtDateWithCreated(code, usedAt))
                     )
@@ -102,10 +100,45 @@ public class Routes {
     }
 
     private RouteAdapter askAndRespond(final Object command, final StatusCode successStatusCode) {
-        CompletionStage<Object> response = ask(actor, command, timeout);
-        return onSuccess(response, done ->
-            complete(successStatusCode, done, mapper)
-        );
+        var response = ask(actor, command, TIMEOUT);
+        return onComplete(response, result -> makeRouteAdapter(successStatusCode, result.get()));
+    }
+
+    private Route makeRouteAdapter(StatusCode successStatusCode, Object payload) {
+        if (payload instanceof NoSuchElementException) {
+            log.error("Item not found: ", payload);
+            return completeResponse(StatusCodes.NOT_FOUND);
+        } else if (payload instanceof Exception) {
+            log.error("Operation failed: ", payload);
+            return completeResponse(StatusCodes.INTERNAL_SERVER_ERROR, ((Exception) payload).getMessage());
+        } else if (payload instanceof Done) {
+            return completeResponse(successStatusCode);
+        } else {
+            return completeResponse(successStatusCode, payload);
+        }
+    }
+
+    private Route completeResponse(final StatusCode statusCode) {
+        return completeResponse(statusCode, null);
+    }
+
+    private Route completeResponse(final StatusCode statusCode, final Object payload) {
+        var responseStatus = HttpResponse.create().withStatus(statusCode);
+        var response = addResponseBody(responseStatus, payload);
+        return complete(response);
+    }
+
+    private HttpResponse addResponseBody(final HttpResponse response, final Object payload) {
+        if (payload != null) {
+            try {
+                var json = objectMapper.writeValueAsString(payload);
+                var body = HttpEntities.create(ContentTypes.APPLICATION_JSON, json);
+                return response.withEntity(body);
+            } catch (JsonProcessingException e) {
+                log.error("Could not serialize payload", e);
+            }
+        }
+        return response;
     }
 
 }

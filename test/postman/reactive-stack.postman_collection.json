@@ -42,7 +42,7 @@
 			"name": "list-recent",
 			"request": {
 				"url": {
-					"raw": "{{baseUrl}}/emojis/recent?seconds=4",
+					"raw": "{{baseUrl}}/emojis/recent?seconds=1000",
 					"host": [
 						"{{baseUrl}}"
 					],
@@ -53,7 +53,7 @@
 					"query": [
 						{
 							"key": "seconds",
-							"value": "4",
+							"value": "1000",
 							"equals": true,
 							"description": ""
 						}
@@ -70,7 +70,7 @@
 		{
 			"name": "get-by-code",
 			"request": {
-				"url": "{{baseUrl}}/emojis/utfCode",
+				"url": "{{baseUrl}}/emojis/U+1F642",
 				"method": "GET",
 				"header": [],
 				"body": {},
@@ -81,7 +81,7 @@
 		{
 			"name": "delete-by-code",
 			"request": {
-				"url": "{{baseUrl}}/emojis/utfCode",
+				"url": "{{baseUrl}}/emojis/U+1F642",
 				"method": "DELETE",
 				"header": [],
 				"body": {},
