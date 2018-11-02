@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Value;
+import reactivestack.serde.InstantDeserializer;
 import reactivestack.serde.InstantSerializer;
 
 import java.time.Instant;
