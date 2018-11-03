@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static reactivestack.bootstrap.Server.DB_SESSION;
+import static reactivestack.model.EmojiUsage.DATE_FORMAT;
 
 public class EmojiActor extends AbstractActor {
 
@@ -38,9 +39,9 @@ public class EmojiActor extends AbstractActor {
     private static final Function<Pair<String, Instant>, String> CREATE_USAGE_SQL = usagePair ->
         String.format("INSERT INTO emoji_usage(code, used_at) VALUES('%s','%s'); " +
                 "UPDATE emoji SET usage_count=(SELECT usage_count+1 FROM emoji WHERE code='%s') WHERE code='%s';",
-            usagePair.first(), usagePair.second(), usagePair.first(), usagePair.first());
+            usagePair.first(), DATE_FORMAT.format(usagePair.second()), usagePair.first(), usagePair.first());
     private static final Function<Long, String> LIST_RECENT_SQL = seconds ->
-        String.format("SELECT * FROM emoji_usage WHERE used_at>=NOW() - INTERVAL '%d SECOND' " +
+        String.format("SELECT * FROM emoji_usage WHERE used_at::timestamptz>=NOW() - INTERVAL '%d SECOND' " +
             "order by used_at desc", seconds);
 
     public static final Function<SlickRow, Emoji> ROW_TO_EMOJI = (row) ->

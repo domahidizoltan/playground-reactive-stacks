@@ -8,13 +8,19 @@ import reactivestack.serde.InstantDeserializer;
 import reactivestack.serde.InstantSerializer;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 @Value
 @AllArgsConstructor
 public class EmojiUsage {
-    private String code;
+
+    public final static DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+        .withZone(ZoneId.systemDefault());
+
+    private final String code;
 
     @JsonSerialize(using = InstantSerializer.class)
     @JsonDeserialize(using = InstantDeserializer.class)
-    private Instant usedAt;
+    private final Instant usedAt;
 }
