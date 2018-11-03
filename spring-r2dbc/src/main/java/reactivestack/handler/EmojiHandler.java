@@ -1,83 +1,78 @@
 package reactivestack.handler;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactivestack.model.Emoji;
-import reactivestack.model.EmojiUsage;
+import reactivestack.repository.EmojiRepository;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-import static org.springframework.http.HttpStatus.OK;
-import static reactivestack.model.CategoryType.SMILEYS_AND_EMOTION;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @Slf4j
 public class EmojiHandler {
 
+    private EmojiRepository emojiRepository;
+
+    public EmojiHandler(final EmojiRepository emojiRepository) {
+        this.emojiRepository = emojiRepository;
+    }
+
     public Mono<ServerResponse> listWithOK(final ServerRequest request) {
         log.debug("Listing all emojis");
-        var e1 = new Emoji("1", SMILEYS_AND_EMOTION, "xxx", 1);
-        var e2 = new Emoji("2", SMILEYS_AND_EMOTION, "yyy", 2);
-        var response = List.of(e1, e2);
-        return respondWith(OK, response);
+        return emojiRepository.findAll()
+            .flatMap(body -> ServerResponse.ok().syncBody(body));
     }
 
     public Mono<ServerResponse> createWithCreated(final ServerRequest request) {
         log.info("Creating emoji");
-        return respondWith(CREATED);
+        return request.bodyToMono(Emoji.class)
+            .flatMap(emojiRepository::save)
+            .flatMap(body -> ServerResponse.status(CREATED).build())
+            .onErrorResume(body -> ServerResponse.status(INTERNAL_SERVER_ERROR).syncBody(body.getMessage()));
     }
 
     public Mono<ServerResponse> listRecentsWithOk(ServerRequest request) {
-        log.debug("Listing emoji usage of the last {} seconds", request.queryParam("usedAt"));
-        var u1 = new EmojiUsage("1", Instant.now());
-        var u2 = new EmojiUsage("1", Instant.now().minus(1, ChronoUnit.HOURS));
-        var response = List.of(u1, u2);
-        return respondWith(OK, response);
+        var secondsString = request.queryParam("seconds").orElse("0");
+        var seconds = Long.valueOf(secondsString);
+        log.info("Listing emoji usage of the last {} seconds", seconds);
+
+        return emojiRepository.findUsageWhereUsedAtAfter(seconds)
+            .log("ss")
+            .flatMap(body -> ServerResponse.ok().syncBody(body));
     }
 
     public Mono<ServerResponse> getByCodeWithOk(ServerRequest request) {
         var code = request.pathVariable("code");
+
         log.debug("Getting emoji with code " + code);
-        var emoji = new Emoji(code, SMILEYS_AND_EMOTION, "xxx", 1);
-        return respondWith(OK, emoji);
+        return emojiRepository.findByCode(code)
+            .flatMap(body -> ServerResponse.ok().syncBody(body))
+            .onErrorResume(body -> ServerResponse.notFound().build());
     }
 
     public Mono<ServerResponse> deleteWithNoContent(ServerRequest request) {
         var code = request.pathVariable("code");
-        log.debug("Delete by code " + code);
-        return respondWith(NO_CONTENT);
+
+        log.info("Delete by code " + code);
+        return emojiRepository.deleteByCode(code)
+            .flatMap(body -> ServerResponse.noContent().build())
+            .onErrorResume(body -> ServerResponse.notFound().build());
     }
 
     public Mono<ServerResponse> saveAtDateWithCreated(ServerRequest request) {
         var code = request.pathVariable("code");
-        var usedAt = request.queryParam("usedAt").get();
+        var usedAt = request.queryParam("usedAt").orElse(Instant.now().toString());
         var instant = Instant.parse(usedAt);
+
         log.info("Save with code {} at date {}", code, instant);
-        return respondWith(CREATED);
+        return emojiRepository.saveUsage(code, instant)
+            .log("xx")
+            .flatMap(body -> ServerResponse.status(CREATED).build())
+            .onErrorResume(body -> ServerResponse.status(INTERNAL_SERVER_ERROR).syncBody(body.getMessage()));
     }
 
-    private Mono<ServerResponse> respondWith(final HttpStatus status) {
-        return respondWith(status, null);
-    }
-
-    private Mono<ServerResponse> respondWith(final HttpStatus status, final Object payload) {
-        var builder = ServerResponse
-            .status(status)
-            .contentType(MediaType.APPLICATION_JSON_UTF8);
-
-        if (payload != null) {
-            ParameterizedTypeReference<Object> typeReference = ParameterizedTypeReference.forType(payload.getClass());
-            return builder.body(Mono.just(payload), typeReference);
-        } else {
-            return builder.build();
-        }
-    }
 }

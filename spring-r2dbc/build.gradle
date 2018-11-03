@@ -1,6 +1,7 @@
 buildscript {
 	ext {
 		springBootVersion = '2.1.0.RELEASE'
+		r2dbcVersion = '1.0.0.M5'
 	}
 	repositories {
 		mavenCentral()
@@ -28,6 +29,10 @@ repositories {
 
 
 dependencies {
-	implementation('org.springframework.boot:spring-boot-starter-webflux')
+	implementation(
+		"org.springframework.boot:spring-boot-starter-webflux",
+		"io.r2dbc:r2dbc-client:$r2dbcVersion",
+		"io.r2dbc:r2dbc-postgresql:$r2dbcVersion",
+	)
 	compileOnly('org.projectlombok:lombok')
 }

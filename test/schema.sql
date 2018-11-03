@@ -13,7 +13,7 @@ CREATE TABLE "public"."emoji" (
 DROP TABLE IF EXISTS "emoji_usage";
 CREATE TABLE "public"."emoji_usage" (
     "code" character varying(10) NOT NULL,
-    "used_at" timestamptz NOT NULL,
+    "used_at" character varying(32) NOT NULL,
     CONSTRAINT "emoji_usage_code_used_at" UNIQUE ("code", "used_at"),
     CONSTRAINT "emoji_usage_code_fkey" FOREIGN KEY (code) REFERENCES emoji(code) ON UPDATE CASCADE ON DELETE CASCADE NOT DEFERRABLE
 ) WITH (oids = false);
