@@ -34,5 +34,5 @@ dependencies {
 		"io.r2dbc:r2dbc-client:$r2dbcVersion",
 		"io.r2dbc:r2dbc-postgresql:$r2dbcVersion",
 	)
-	compileOnly('org.projectlombok:lombok')
+	compileOnly('org.projectlombok:lombok:1.18.2')
 }

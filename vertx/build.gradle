@@ -1,0 +1,23 @@
+buildscript {
+	ext {
+		vertxVersion = '3.6.2'
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+group = 'reactivestack'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+	mavenCentral()
+}
+
+
+dependencies {
+	implementation(
+		"io.vertx:vertx-web:$vertxVersion"
+	)
+	compileOnly('org.projectlombok:lombok:1.18.2')
+}
