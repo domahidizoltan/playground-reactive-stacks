@@ -1,23 +1,33 @@
 buildscript {
-	ext {
-		vertxVersion = '3.6.2'
+	repositories {
+		jcenter()
+	}
+	dependencies {
+		classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.4'
 	}
 }
 
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 group = 'reactivestack'
 version = '0.0.1-SNAPSHOT'
+
+mainClassName = 'reactivestack.VertxApplication'
 
 repositories {
 	mavenCentral()
 }
 
+ext {
+    vertxVersion = '3.6.2'
+}
 
 dependencies {
 	implementation(
-		"io.vertx:vertx-web:$vertxVersion"
+			"io.vertx:vertx-config:$vertxVersion",
+			"io.vertx:vertx-web:$vertxVersion"
 	)
 	compileOnly('org.projectlombok:lombok:1.18.2')
 }
