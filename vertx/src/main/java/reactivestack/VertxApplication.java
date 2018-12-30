@@ -1,11 +1,9 @@
 package reactivestack;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import reactivestack.router.EmojiRoutes;
 import reactivestack.bootstrap.AppSystem;
+import reactivestack.bootstrap.ServerVerticle;
 
 public class VertxApplication {
 
@@ -14,23 +12,13 @@ public class VertxApplication {
 
     public static void main(String[] args) {
         var system = new AppSystem();
-        var router = new EmojiRoutes(system.getVertx());
-
-        var serverHandler = handleServerCreate(system, router);
-        system.initWith(serverHandler);
-    }
-
-    private static Handler<AsyncResult<Void>> handleServerCreate(AppSystem system, EmojiRoutes router) {
-        return result -> {
+        system.loadConfig().setHandler(result -> {
             if (result.succeeded()) {
-                var port = system.getConfig().getInteger("http.port");
-                system.getVertx()
-                    .createHttpServer()
-                    .requestHandler(router)
-                    .listen(port);
-                LOG.info("Application is listening on port " + port);
+                system.getVertx().deployVerticle(new ServerVerticle(system));
+            } else {
+                LOG.error("Could not load config");
             }
-        };
+        });
     }
 
 }
