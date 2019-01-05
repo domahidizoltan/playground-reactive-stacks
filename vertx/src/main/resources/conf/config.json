@@ -1,3 +1,12 @@
 {
-  "http.port" : 8030
+  "server": {
+    "port": 8030
+  },
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "username": "admin",
+    "password": "pass",
+    "database": "reactive_stack"
+  }
 }

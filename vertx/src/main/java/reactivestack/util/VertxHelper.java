@@ -9,25 +9,24 @@ public final class VertxHelper {
 
     private final static Logger LOG = LoggerFactory.getLogger(VertxHelper.class);
 
-
     private VertxHelper() {}
 
-    public static void logCompletion(AsyncResult<?> result, Future<Void> future, String message) {
+    public static void logCompletion(AsyncResult<?> result, Future<?> future, String message) {
         if (result.succeeded()) {
             LOG.info(message);
             future.complete();
         } else {
-            LOG.error(message + " :: failed");
+            LOG.error(message + " :: failed", result.cause());
             future.failed();
         }
     }
 
-    public static void debugCompletion(AsyncResult<?> result, Future<Void> future, String message) {
+    public static void debugCompletion(AsyncResult<?> result, Future<?> future, String message) {
         if (result.succeeded()) {
             LOG.debug(message);
             future.complete();
         } else {
-            LOG.error(message + " :: failed");
+            LOG.error(message + " :: failed", result.cause());
             future.failed();
         }
     }

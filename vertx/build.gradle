@@ -27,7 +27,10 @@ ext {
 dependencies {
 	implementation(
 			"io.vertx:vertx-config:$vertxVersion",
-			"io.vertx:vertx-web:$vertxVersion"
+			"io.vertx:vertx-web:$vertxVersion",
+            "io.vertx:vertx-mysql-postgresql-client:$vertxVersion",
+			"org.slf4j:slf4j-api:1.7.25"
 	)
+
 	compileOnly('org.projectlombok:lombok:1.18.2')
 }

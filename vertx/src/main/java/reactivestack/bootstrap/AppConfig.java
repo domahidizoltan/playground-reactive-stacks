@@ -10,12 +10,12 @@ import reactivestack.util.VertxHelper;
 
 import java.util.Optional;
 
-public class AppSystem {
+public class AppConfig {
 
     private final Vertx vertx;
     private Optional<JsonObject> config = Optional.of(new JsonObject());
 
-    public AppSystem() {
+    public AppConfig() {
         this.vertx = Vertx.vertx();
     }
 
