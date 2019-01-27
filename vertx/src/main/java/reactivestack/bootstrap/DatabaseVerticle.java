@@ -46,14 +46,10 @@ public class DatabaseVerticle extends AbstractVerticle {
             .registerCodec(new EmojiListCodec())
             .registerCodec(new EmojiUsageListCodec());
 
-        client = PostgreSQLClient.createShared(vertx, config);
-        client.getConnection(result -> {
-            if (result.succeeded()) {
-                emojiRepository = new EmojiRepository(result.result());
-                vertx.eventBus().consumer(DB_QUEUE_NAME, this::onMessage);
-            }
-            debugCompletion(result, startFuture, "Open DB connection");
-        });
+        client = PostgreSQLClient.createNonShared(vertx, config);
+        emojiRepository = new EmojiRepository(client);
+        vertx.eventBus().consumer(DB_QUEUE_NAME, this::onMessage);
+        startFuture.complete();
     }
 
     @Override
@@ -61,6 +57,7 @@ public class DatabaseVerticle extends AbstractVerticle {
         client.close(result -> debugCompletion(result, stopFuture, "Close DB client"));
         vertx.eventBus().unregisterCodec(EmojiCodec.NAME);
         vertx.eventBus().unregisterCodec(EmojiListCodec.NAME);
+        stopFuture.complete();
     }
 
     private void onMessage(Message<JsonObject> message) {

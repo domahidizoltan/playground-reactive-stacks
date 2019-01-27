@@ -75,6 +75,9 @@ public class EmojiHandler {
     public void saveAtDateWithCreated(RoutingContext ctx) {
         var code = getParam(ctx, CODE_PARAM);
         var usedAt = getParam(ctx, "usedAt");
+        if (usedAt == null) {
+            usedAt = Instant.now().toString();
+        }
         var instant = Instant.parse(usedAt);
         LOG.info("Save with code {0} at date {1}", code, instant);
 

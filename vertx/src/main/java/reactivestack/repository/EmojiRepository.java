@@ -7,6 +7,7 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.ResultSet;
+import io.vertx.ext.sql.SQLClient;
 import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.sql.UpdateResult;
 import reactivestack.model.Emoji;
@@ -21,24 +22,34 @@ import static reactivestack.model.EmojiUsage.DATE_FORMAT;
 
 public class EmojiRepository {
 
-    private final SQLConnection connection;
+    private final SQLClient client;
 
-    public EmojiRepository(final SQLConnection connection) {
-        this.connection = connection;
+    public EmojiRepository(SQLClient client) {
+        this.client = client;
     }
 
     public Future<List<Emoji>> findAll() {
         var operationResult = Future.<List<Emoji>>future();
-        connection.query("SELECT * FROM emoji ORDER BY usage_count desc",
-            result -> multipleRecordHandler(result, operationResult));
+        client.getConnection(connection -> {
+            if (connection.succeeded()) {
+                var conn = connection.result();
+                conn.query("SELECT * FROM emoji ORDER BY usage_count desc",
+                    result -> multipleRecordHandler(result, operationResult, conn));
+            }
+        });
         return operationResult;
     }
 
     public Future<Emoji> findByCode(final String code) {
         var operationResult = Future.<Emoji>future();
         var params = new JsonArray(List.of(code));
-        connection.queryWithParams("SELECT * FROM emoji WHERE code = ?", params,
-            result -> singleRecordHandler(result, operationResult, code));
+        client.getConnection(connection -> {
+            if (connection.succeeded()) {
+                var conn = connection.result();
+                conn.queryWithParams("SELECT * FROM emoji WHERE code = ?", params,
+                    result -> singleRecordHandler(result, operationResult, code, conn));
+            }
+        });
         return operationResult;
     }
 
@@ -46,32 +57,52 @@ public class EmojiRepository {
     public Future<List<EmojiUsage>> findUsageWhereUsedAtAfter(final long seconds) {
         var operationResult = Future.<List<EmojiUsage>>future();
         var params = new JsonArray(List.of(seconds));
-        connection.queryWithParams("SELECT * FROM emoji_usage WHERE used_at::timestamptz>=NOW() - INTERVAL '? SECOND' " +
-                "order by used_at desc", params,
-            result -> multipleEmojiUsageRecordHandler(result, operationResult));
+        client.getConnection(connection -> {
+            if (connection.succeeded()) {
+                var conn = connection.result();
+                conn.queryWithParams("SELECT * FROM emoji_usage WHERE used_at::timestamptz>=NOW() - INTERVAL '? SECOND' " +
+                    "order by used_at desc", params,
+                        result -> multipleEmojiUsageRecordHandler(result, operationResult, conn));
+            }
+        });
         return operationResult;
     }
 
     public Future<Integer> save(final Emoji emoji) {
         var operationResult = Future.<Integer>future();
         var params = new JsonArray(List.of(emoji.getCode(), emoji.getCategory().name(), emoji.getName()));
-        connection.updateWithParams("INSERT INTO emoji(code, category, name) VALUES(?, ?, ?)", params,
-            result -> updateRecordHandler(result, operationResult));
+        client.getConnection(connection -> {
+            if (connection.succeeded()) {
+                var conn = connection.result();
+                conn.updateWithParams("INSERT INTO emoji(code, category, name) VALUES(?, ?, ?)", params,
+                    result -> updateRecordHandler(result, operationResult, conn));
+            }
+        });
         return operationResult;
     }
 
     public Future<Integer> saveUsage(final String code, final Instant usedAt) {
         var insertUsageResult = Future.<Integer>future();
         var insertParams = new JsonArray(List.of(code, DATE_FORMAT.format(usedAt)));
-        connection.updateWithParams("INSERT INTO emoji_usage(code, used_at) VALUES(?, ?)", insertParams,
-            result -> updateRecordHandler(result, insertUsageResult));
+        client.getConnection(connection -> {
+                if (connection.succeeded()) {
+                    var conn = connection.result();
+                    conn.updateWithParams("INSERT INTO emoji_usage(code, used_at) VALUES(?, ?)", insertParams,
+                        result -> updateRecordHandler(result, insertUsageResult, conn));
+                }
+            });
 
         var updateEmojiResult = Future.<Integer>future();
         var updateParams = new JsonArray(List.of(code, code));
         insertUsageResult.setHandler(insertResult -> {
             if (insertResult.succeeded()) {
-                connection.updateWithParams("UPDATE emoji SET usage_count=(SELECT usage_count+1 FROM emoji WHERE code=?) WHERE code=?", updateParams,
-                    result -> updateRecordHandler(result, updateEmojiResult));
+                client.getConnection(connection -> {
+                    if (connection.succeeded()) {
+                        var conn = connection.result();
+                        conn.updateWithParams("UPDATE emoji SET usage_count=(SELECT usage_count+1 FROM emoji WHERE code=?) WHERE code=?", updateParams,
+                            result -> updateRecordHandler(result, updateEmojiResult, conn));
+                    }
+                });
             } else {
                 updateEmojiResult.fail(insertResult.cause().getMessage());
             }
@@ -83,24 +114,31 @@ public class EmojiRepository {
     public Future<Integer> deleteByCode(final String code) {
         var operationResult = Future.<Integer>future();
         var params = new JsonArray(List.of(code));
-        connection.updateWithParams("DELETE FROM emoji WHERE code = ?", params,
-            result -> updateRecordHandler(result, operationResult));
+        client.getConnection(connection -> {
+            if (connection.succeeded()) {
+                var conn = connection.result();
+                conn.updateWithParams("DELETE FROM emoji WHERE code = ?", params,
+                    result -> updateRecordHandler(result, operationResult, conn));
+            }
+        });
         return operationResult;
     }
 
-    private void multipleRecordHandler(AsyncResult<ResultSet> asyncResult, Future<List<Emoji>> operationResult) {
+    private void multipleRecordHandler(AsyncResult<ResultSet> asyncResult, Future<List<Emoji>> operationResult, SQLConnection connection) {
         var emojis = asyncResult
             .result()
             .getRows()
             .stream()
             .map(json -> json.mapTo(Emoji.class))
             .collect(Collectors.toList());
+        connection.close();
         operationResult.complete(emojis);
     }
 
-    private void singleRecordHandler(AsyncResult<ResultSet> asyncResult, Future<Emoji> operationResult, String code) {
+    private void singleRecordHandler(AsyncResult<ResultSet> asyncResult, Future<Emoji> operationResult, String code, SQLConnection connection) {
         var rows = asyncResult.result().getRows();
 
+        connection.close();
         if (rows.isEmpty()) {
             operationResult.fail(new NoSuchElementException("Emoji not found with code " + code));
         } else {
@@ -109,7 +147,8 @@ public class EmojiRepository {
         }
     }
 
-    private void updateRecordHandler(AsyncResult<UpdateResult> asyncResult, Future<Integer> operationResult) {
+    private void updateRecordHandler(AsyncResult<UpdateResult> asyncResult, Future<Integer> operationResult, SQLConnection connection) {
+        connection.close();
         if (asyncResult.succeeded()) {
             var rowsUpdated = asyncResult.result().getUpdated();
             operationResult.complete(rowsUpdated);
@@ -128,13 +167,14 @@ public class EmojiRepository {
         }
     }
 
-    private void multipleEmojiUsageRecordHandler(AsyncResult<ResultSet> asyncResult, Future<List<EmojiUsage>> operationResult) {
+    private void multipleEmojiUsageRecordHandler(AsyncResult<ResultSet> asyncResult, Future<List<EmojiUsage>> operationResult, SQLConnection connection) {
         var usages = asyncResult
             .result()
             .getRows()
             .stream()
             .map(this::toEmojiUsage)
             .collect(Collectors.toList());
+        connection.close();
         operationResult.complete(usages);
     }
 
