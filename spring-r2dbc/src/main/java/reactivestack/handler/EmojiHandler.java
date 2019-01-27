@@ -41,7 +41,6 @@ public class EmojiHandler {
         log.info("Listing emoji usage of the last {} seconds", seconds);
 
         return emojiRepository.findUsageWhereUsedAtAfter(seconds)
-            .log("ss")
             .flatMap(body -> ServerResponse.ok().syncBody(body));
     }
 
@@ -70,7 +69,6 @@ public class EmojiHandler {
 
         log.info("Save with code {} at date {}", code, instant);
         return emojiRepository.saveUsage(code, instant)
-            .log("xx")
             .flatMap(body -> ServerResponse.status(CREATED).build())
             .onErrorResume(body -> ServerResponse.status(INTERNAL_SERVER_ERROR).syncBody(body.getMessage()));
     }
